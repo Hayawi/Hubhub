@@ -1,0 +1,36 @@
+<html>
+
+<head>
+    <link rel="StyleSheet" href="main.css" type="text/css" media="screen, print" />
+    <script type="text/javascript" src="main.js">
+		;
+	</script>
+    <title>Analytics Page</title>
+</head>
+
+<body onload="getDevices()">
+
+    <div class="devices" id="devices">
+        <div id="d1" class="device">
+            <label class="name" id="d1name">mic1</label>
+            <label class="switch">
+                <label class="off">Off</label>
+                <input type="checkbox" id="1" onclick="toggleCheck(this)">
+                <span class="slider"></span>
+                <label class="on">On</label>
+            </label>
+        </div>
+
+        <div id="d2" class="device">
+            <label class="name" id="d2name">mic2</label>
+            <label class="switch">
+                <label class="off">Off</label>
+                <input type="checkbox" id="2">
+                <span class="slider"></span>
+                <label class="on">On</label>
+            </label>
+        </div>
+    </div>
+</body>
+
+</html>
