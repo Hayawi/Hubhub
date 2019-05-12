@@ -17,7 +17,7 @@ function submitToggle(request){
 function getDevices(){
     var request = new XMLHttpRequest();
 
-	request.open("GET", ("?checks=true"), true);
+	request.open("GET", ("http://localhost:8080/getDevices"), true);
 	request.onreadystatechange = function(){
 		deviceHandler(request);
 	}
@@ -38,11 +38,13 @@ function deviceHandler(request){
                 +' <label class="name" id="' + info[0] +'">' + info[1] + '</label>'
                 + '<label class="switch">'
                 + '<label class="off">Off</label>'
-                + '<input type="checkbox" id="' + info[0] +'" onclick="toggleCheck(this)">'
+                + '<input type="checkbox" id="' + info[0] +'" onclick="toggleCheck(this)"'
+                if (info[2] != "") devices.innerHTML += 'checked'
+                devices.innerHTML += '>'
                 + '<span class="slider"></span>'
                 + '<label class="on">On</label>'
                 + '</label>'
-                + '</div>'
+                + '</div>';
             }
         }
     }
