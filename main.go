@@ -8,13 +8,24 @@ import (
 )
 
 var tpl *template.Template
+var clientID = "dd1a4123-5130-4907-a304-4a19ad2c181a"
+var secretID = "1770d1b6-3ace-4a8b-9559-4c0abb20863f"
 
 func toggleDeviceHandler(w http.ResponseWriter, r *http.Request) {
 	keys := r.URL.Query()
 	deviceID := keys.Get("device")
 	value := keys.Get("checked")
 
-	fmt.Println("Url Param 'device' is: " + string(deviceID) + " and its value is: " + string(value))
+	status := false
+	if value == "true" {
+		status = SetSwitch(&clientID, &secretID, deviceID, "on")
+	} else {
+		status = SetSwitch(&clientID, &secretID, deviceID, "off")
+	}
+	if !status {
+		fmt.Println("Setting device: " + string(deviceID) + " to value: " + string(value) + " failed!")
+		tpl.ExecuteTemplate(w, "Main.html", nil)
+	}
 }
 
 func mainHandler(w http.ResponseWriter, r *http.Request) {
@@ -35,9 +46,8 @@ func getDevicesHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getDevices() []string {
-	client := "dd1a4123-5130-4907-a304-4a19ad2c181a"
-	secret := "1770d1b6-3ace-4a8b-9559-4c0abb20863f"
-	devices := GetDevices(&client, &secret)
+
+	devices := GetDevices(&clientID, &secretID)
 	return devices
 }
 

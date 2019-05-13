@@ -1,7 +1,7 @@
 function toggleCheck(element) {
     var check = element.checked;
     var request = new XMLHttpRequest();
-    request.open("POST", ("/Main/toggleDevice?device=" + element.id + "&checked=" + check), true);
+    request.open("POST", ("/Main/toggleDevice/?device=" + element.id + "&checked=" + check), true);
     request.onreadystatechange = function () {
         submitToggle(request);
     };

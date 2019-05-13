@@ -17,6 +17,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net/http"
 
 	"github.com/marcopaganini/gosmart"
 )
@@ -33,6 +34,9 @@ var (
 	flagAll       = flag.Bool("all", false, "Show Information about all devices found")
 )
 
+var client *http.Client
+var endpoint string
+
 func check(err error) {
 	if err != nil {
 		log.Fatalln(err)
@@ -41,6 +45,34 @@ func check(err error) {
 
 //GetDevices returns a slice of devices as "|" seperated strings
 func GetDevices(clientID *string, secretID *string) []string {
+	accessAPI(clientID, secretID)
+
+	devices := []string{}
+	devs, err := gosmart.GetDevices(client, endpoint)
+	check(err)
+	for _, d := range devs {
+		dInfo, err := gosmart.GetDeviceInfo(client, endpoint, d.ID)
+		check(err)
+		if dInfo.Attributes["switch"] == "on" {
+			devices = append(devices, d.ID+"|"+d.DisplayName+"|on")
+		} else {
+			devices = append(devices, d.ID+"|"+d.DisplayName+"|")
+		}
+		fmt.Printf("ID: %s, Name: %q, Display Name: %q\n", d.ID, d.Name, d.DisplayName)
+	}
+	return devices
+}
+
+// SetSwitch sets the value of the switch parameter on the given device
+func SetSwitch(clientID *string, secretID *string, deviceID string, switchValue string) bool {
+	accessAPI(clientID, secretID)
+
+	status, err := gosmart.SendDeviceCommands(client, endpoint, deviceID, switchValue)
+	check(err)
+	return status
+}
+
+func accessAPI(clientID *string, secretID *string) {
 	flagClient = clientID
 	flagSecret = secretID
 
@@ -60,32 +92,18 @@ func GetDevices(clientID *string, secretID *string) []string {
 	// Create the oauth2.config object and get a token
 	config := gosmart.NewOAuthConfig(*flagClient, *flagSecret)
 	token, err := gosmart.GetToken(tfile, config)
+	flagTokenFile = &tfile
 	check(err)
 
 	// Create a client with the token. This client will be used for all ST
 	// API operations from here on.
 	ctx := context.Background()
-	client := config.Client(ctx, token)
+	client = config.Client(ctx, token)
 
 	// Retrieve Endpoints URI. All future accesses to the smartthings API
 	// for this session should use this URL, followed by the desired URL path.
-	endpoint, err := gosmart.GetEndPointsURI(client)
+	endpoint, err = gosmart.GetEndPointsURI(client)
 	check(err)
-
-	devices := []string{}
-	devs, err := gosmart.GetDevices(client, endpoint)
-	check(err)
-	for _, d := range devs {
-		dInfo, err := gosmart.GetDeviceInfo(client, endpoint, d.ID)
-		check(err)
-		if dInfo.Attributes["switch"] == "on" {
-			devices = append(devices, d.ID+"|"+d.Name+"|on")
-		} else {
-			devices = append(devices, d.ID+"|"+d.Name+"|")
-		}
-		fmt.Printf("ID: %s, Name: %q, Display Name: %q\n", d.ID, d.Name, d.DisplayName)
-	}
-	return devices
 }
 
 /*func main() {
