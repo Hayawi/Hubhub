@@ -10,7 +10,7 @@
 // http://github.com/marcopaganini/gosmart
 // (C) 2016 by Marco Paganini <paganini@paganini.net>
 
-package simple
+package main
 
 import (
 	"context"
