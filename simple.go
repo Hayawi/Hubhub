@@ -17,6 +17,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net/http"
 
 	"github.com/marcopaganini/gosmart"
 )
@@ -33,6 +34,9 @@ var (
 	flagAll       = flag.Bool("all", false, "Show Information about all devices found")
 )
 
+var client *http.Client
+var endpoint string
+
 func check(err error) {
 	if err != nil {
 		log.Fatalln(err)
@@ -41,6 +45,34 @@ func check(err error) {
 
 //GetDevices returns a slice of devices as "|" seperated strings
 func GetDevices(clientID *string, secretID *string) []string {
+	accessAPI(clientID, secretID)
+
+	devices := []string{}
+	devs, err := gosmart.GetDevices(client, endpoint)
+	check(err)
+	for _, d := range devs {
+		dInfo, err := gosmart.GetDeviceInfo(client, endpoint, d.ID)
+		check(err)
+		if dInfo.Attributes["switch"] == "on" {
+			devices = append(devices, d.ID+"|"+d.DisplayName+"|on")
+		} else {
+			devices = append(devices, d.ID+"|"+d.DisplayName+"|")
+		}
+		fmt.Printf("ID: %s, Name: %q, Display Name: %q\n", d.ID, d.Name, d.DisplayName)
+	}
+	return devices
+}
+
+// SetSwitch sets the value of the switch parameter on the given device
+func SetSwitch(clientID *string, secretID *string, deviceID string, switchValue string) bool {
+	accessAPI(clientID, secretID)
+
+	status, err := gosmart.SendDeviceCommands(client, endpoint, deviceID, switchValue)
+	check(err)
+	return status
+}
+
+func accessAPI(clientID *string, secretID *string) {
 	flagClient = clientID
 	flagSecret = secretID
 
@@ -60,124 +92,16 @@ func GetDevices(clientID *string, secretID *string) []string {
 	// Create the oauth2.config object and get a token
 	config := gosmart.NewOAuthConfig(*flagClient, *flagSecret)
 	token, err := gosmart.GetToken(tfile, config)
+	flagTokenFile = &tfile
 	check(err)
 
 	// Create a client with the token. This client will be used for all ST
 	// API operations from here on.
 	ctx := context.Background()
-	client := config.Client(ctx, token)
+	client = config.Client(ctx, token)
 
 	// Retrieve Endpoints URI. All future accesses to the smartthings API
 	// for this session should use this URL, followed by the desired URL path.
-	endpoint, err := gosmart.GetEndPointsURI(client)
+	endpoint, err = gosmart.GetEndPointsURI(client)
 	check(err)
-
-	devices := []string{}
-	devs, err := gosmart.GetDevices(client, endpoint)
-	check(err)
-	for _, d := range devs {
-		dInfo, err := gosmart.GetDeviceInfo(client, endpoint, d.ID)
-		check(err)
-		if dInfo.Attributes["switch"] == "on" {
-			devices = append(devices, d.ID+"|"+d.Name+"|on")
-		} else {
-			devices = append(devices, d.ID+"|"+d.Name+"|")
-		}
-		fmt.Printf("ID: %s, Name: %q, Display Name: %q\n", d.ID, d.Name, d.DisplayName)
-	}
-	return devices
 }
-
-/*func main() {
-	flag.Parse()
-
-	// No date on log messages
-	log.SetFlags(0)
-
-	if *flagDevID != "" && *flagAll {
-		log.Fatalln("Invalid flag combination: --devid and --all are mutually exclusive.")
-	}
-
-	// If we have a token file from the command line, use that directly.
-	// Otherwise, form the name from tokenFilePrefix and the Client ID.
-	tfile := *flagTokenFile
-	if tfile == "" {
-		if *flagClient == "" {
-			log.Fatalf("Must specify Client ID (--client) or Token File (--tokenfile)")
-		}
-		tfile = tokenFilePrefix + "_" + *flagClient + ".json"
-	}
-
-	// Create the oauth2.config object and get a token
-	config := gosmart.NewOAuthConfig(*flagClient, *flagSecret)
-	token, err := gosmart.GetToken(tfile, config)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	// Create a client with the token. This client will be used for all ST
-	// API operations from here on.
-	ctx := context.Background()
-	client := config.Client(ctx, token)
-
-	// Retrieve Endpoints URI. All future accesses to the smartthings API
-	// for this session should use this URL, followed by the desired URL path.
-	endpoint, err := gosmart.GetEndPointsURI(client)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	devices := []string{}
-
-	if *flagDevID != "" {
-		devices = append(devices, *flagDevID)
-	}
-	// List all info about devices if --all specified
-	if *flagAll {
-		devs, err := gosmart.GetDevices(client, endpoint)
-		if err != nil {
-			log.Fatalln(err)
-		}
-		for _, d := range devs {
-			devices = append(devices, d.ID)
-		}
-	}
-
-	if len(devices) == 0 {
-		devs, err := gosmart.GetDevices(client, endpoint)
-		if err != nil {
-			log.Fatalln(err)
-		}
-		for _, d := range devs {
-			fmt.Printf("ID: %s, Name: %q, Display Name: %q\n", d.ID, d.Name, d.DisplayName)
-		}
-	} else {
-		for _, id := range devices {
-			dev, err := gosmart.GetDeviceInfo(client, endpoint, id)
-			if err != nil {
-				log.Fatalln(err)
-			}
-			fmt.Printf("\nDevice ID:      %s\n", dev.ID)
-			fmt.Printf("  Name:         %s\n", dev.Name)
-			fmt.Printf("  Display Name: %s\n", dev.DisplayName)
-			fmt.Printf("  Attributes:\n")
-			for k, v := range dev.Attributes {
-				fmt.Printf("    %v: %v\n", k, v)
-			}
-
-			fmt.Printf("  Commands & Parameters:\n")
-			cmds, err := gosmart.GetDeviceCommands(client, endpoint, id)
-			for _, cmd := range cmds {
-				fmt.Printf("    %s", cmd.Command)
-				if len(cmd.Params) != 0 {
-					fmt.Printf(" Parameters:")
-					for k, v := range cmd.Params {
-						fmt.Printf(" %s=%s", k, v)
-					}
-				}
-				fmt.Println()
-			}
-		}
-	}
-}
-*/
