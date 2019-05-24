@@ -5,14 +5,24 @@
     <script type="text/javascript" src="sup/main.js">
         ;
     </script>
-    <title>Analytics Page</title>
+    <title>Masjid WebApp</title>
 </head>
 
-<body onload="getDevices()">
+<body onload="load()">
 
-    <div class="devices" id="devices">
+        <div class="presetContainer">
+            <label for="preset" class="presets">Presets: </label>
+            <div class="presets" id="presets">    
+            </div>
+        </div>
 
-    </div>
+        <input type="button" value="Save as Preset" id="setPreset" onclick="savePreset()">
+        
+        <div class="devices" id="devices">
+            
+        </div>
+            
+            
 </body>
 
 </html>

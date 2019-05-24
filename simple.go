@@ -19,7 +19,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/marcopaganini/gosmart"
+	gosmart "github.com/marcopaganini/gosmart"
 )
 
 const (
@@ -36,6 +36,7 @@ var (
 
 var client *http.Client
 var endpoint string
+var IDToName = map[string]string{}
 
 func check(err error) {
 	if err != nil {
@@ -43,8 +44,30 @@ func check(err error) {
 	}
 }
 
+//returns the name of the device given the ID used
+func getNameFromID(ID string) string {
+	if val, ok := IDToName[ID]; ok {
+		return val
+	}
+	fmt.Println("ID not found")
+	return ""
+}
+
+//populates global map with key, value pairs ID, Name
+func mapOfIDToName(clientID *string, secretID *string) {
+	accessAPI(clientID, secretID)
+
+	devs, err := gosmart.GetDevices(client, endpoint)
+	check(err)
+	for _, d := range devs {
+		IDToName[d.ID] = d.DisplayName
+	}
+
+}
+
 //GetDevices returns a slice of devices as "|" seperated strings
 func GetDevices(clientID *string, secretID *string) []string {
+	mapOfIDToName(clientID, secretID)
 	accessAPI(clientID, secretID)
 
 	devices := []string{}
@@ -67,9 +90,10 @@ func GetDevices(clientID *string, secretID *string) []string {
 func SetSwitch(clientID *string, secretID *string, deviceID string, switchValue string) bool {
 	accessAPI(clientID, secretID)
 
-	status, err := gosmart.SendDeviceCommands(client, endpoint, deviceID, switchValue)
-	check(err)
-	return status
+	// status, err := gosmart.SendDeviceCommands(client, endpoint, deviceID, switchValue)
+	// check(err)
+	// return status
+	return true
 }
 
 func accessAPI(clientID *string, secretID *string) {
