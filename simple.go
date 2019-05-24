@@ -19,7 +19,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/marcopaganini/gosmart"
+	gosmart "github.com/marcopaganini/gosmart"
 )
 
 const (
@@ -36,6 +36,7 @@ var (
 
 var client *http.Client
 var endpoint string
+var IDToName = map[string]string{}
 
 func check(err error) {
 	if err != nil {
@@ -43,8 +44,30 @@ func check(err error) {
 	}
 }
 
+//returns the name of the device given the ID used
+func getNameFromID(ID string) string {
+	if val, ok := IDToName[ID]; ok {
+		return val
+	}
+	fmt.Println("ID not found")
+	return ""
+}
+
+//populates global map with key, value pairs ID, Name
+func mapOfIDToName(clientID *string, secretID *string) {
+	accessAPI(clientID, secretID)
+
+	devs, err := gosmart.GetDevices(client, endpoint)
+	check(err)
+	for _, d := range devs {
+		IDToName[d.ID] = d.DisplayName
+	}
+
+}
+
 //GetDevices returns a slice of devices as "|" seperated strings
 func GetDevices(clientID *string, secretID *string) []string {
+	mapOfIDToName(clientID, secretID)
 	accessAPI(clientID, secretID)
 
 	devices := []string{}
@@ -67,9 +90,10 @@ func GetDevices(clientID *string, secretID *string) []string {
 func SetSwitch(clientID *string, secretID *string, deviceID string, switchValue string) bool {
 	accessAPI(clientID, secretID)
 
-	status, err := gosmart.SendDeviceCommands(client, endpoint, deviceID, switchValue)
-	check(err)
-	return status
+	// status, err := gosmart.SendDeviceCommands(client, endpoint, deviceID, switchValue)
+	// check(err)
+	// return status
+	return true
 }
 
 func accessAPI(clientID *string, secretID *string) {
@@ -105,97 +129,3 @@ func accessAPI(clientID *string, secretID *string) {
 	endpoint, err = gosmart.GetEndPointsURI(client)
 	check(err)
 }
-
-/*func main() {
-	flag.Parse()
-
-	// No date on log messages
-	log.SetFlags(0)
-
-	if *flagDevID != "" && *flagAll {
-		log.Fatalln("Invalid flag combination: --devid and --all are mutually exclusive.")
-	}
-
-	// If we have a token file from the command line, use that directly.
-	// Otherwise, form the name from tokenFilePrefix and the Client ID.
-	tfile := *flagTokenFile
-	if tfile == "" {
-		if *flagClient == "" {
-			log.Fatalf("Must specify Client ID (--client) or Token File (--tokenfile)")
-		}
-		tfile = tokenFilePrefix + "_" + *flagClient + ".json"
-	}
-
-	// Create the oauth2.config object and get a token
-	config := gosmart.NewOAuthConfig(*flagClient, *flagSecret)
-	token, err := gosmart.GetToken(tfile, config)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	// Create a client with the token. This client will be used for all ST
-	// API operations from here on.
-	ctx := context.Background()
-	client := config.Client(ctx, token)
-
-	// Retrieve Endpoints URI. All future accesses to the smartthings API
-	// for this session should use this URL, followed by the desired URL path.
-	endpoint, err := gosmart.GetEndPointsURI(client)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	devices := []string{}
-
-	if *flagDevID != "" {
-		devices = append(devices, *flagDevID)
-	}
-	// List all info about devices if --all specified
-	if *flagAll {
-		devs, err := gosmart.GetDevices(client, endpoint)
-		if err != nil {
-			log.Fatalln(err)
-		}
-		for _, d := range devs {
-			devices = append(devices, d.ID)
-		}
-	}
-
-	if len(devices) == 0 {
-		devs, err := gosmart.GetDevices(client, endpoint)
-		if err != nil {
-			log.Fatalln(err)
-		}
-		for _, d := range devs {
-			fmt.Printf("ID: %s, Name: %q, Display Name: %q\n", d.ID, d.Name, d.DisplayName)
-		}
-	} else {
-		for _, id := range devices {
-			dev, err := gosmart.GetDeviceInfo(client, endpoint, id)
-			if err != nil {
-				log.Fatalln(err)
-			}
-			fmt.Printf("\nDevice ID:      %s\n", dev.ID)
-			fmt.Printf("  Name:         %s\n", dev.Name)
-			fmt.Printf("  Display Name: %s\n", dev.DisplayName)
-			fmt.Printf("  Attributes:\n")
-			for k, v := range dev.Attributes {
-				fmt.Printf("    %v: %v\n", k, v)
-			}
-
-			fmt.Printf("  Commands & Parameters:\n")
-			cmds, err := gosmart.GetDeviceCommands(client, endpoint, id)
-			for _, cmd := range cmds {
-				fmt.Printf("    %s", cmd.Command)
-				if len(cmd.Params) != 0 {
-					fmt.Printf(" Parameters:")
-					for k, v := range cmd.Params {
-						fmt.Printf(" %s=%s", k, v)
-					}
-				}
-				fmt.Println()
-			}
-		}
-	}
-}
-*/
